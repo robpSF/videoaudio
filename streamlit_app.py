@@ -1,5 +1,5 @@
 import streamlit as st
-from ffmpeg import input as ffmpeg_input, output as ffmpeg_output, concat
+import ffmpeg
 import io
 
 def combine_videos_and_audio_stream(video_paths, audio_path):
@@ -16,8 +16,11 @@ def combine_videos_and_audio_stream(video_paths, audio_path):
         buffer.write(process[0])  # Write output to buffer
         buffer.seek(0)  # Reset buffer position
         return buffer
+    except ffmpeg.Error as e:
+        st.error(f"Error combining video and audio: {e.stderr.decode()}")
+        return None
     except Exception as e:
-        st.error(f"Error combining video and audio: {e}")
+        st.error(f"An unexpected error occurred: {e}")
         return None
 
 st.title("Combine Multiple Videos and Audio")

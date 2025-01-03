@@ -1,15 +1,24 @@
 import streamlit as st
 import ffmpeg
+import io
 
-def combine_videos_and_audio(video_paths, audio_path, output_path):
+def combine_videos_and_audio_stream(video_paths, audio_path):
+    buffer = io.BytesIO()
     try:
         # Combine all videos into one
         input_videos = [ffmpeg.input(video) for video in video_paths]
         video_concat = ffmpeg.concat(*input_videos, v=1, a=1).node
-        output = ffmpeg.output(video_concat, audio_path, output_path, vcodec='libx264', acodec='aac', strict='experimental')
-        output.run(overwrite_output=True)
+        process = (
+            ffmpeg
+            .output(video_concat[0], audio_path, "pipe:1", format="mp4", vcodec="libx264", acodec="aac", strict="experimental")
+            .run(capture_stdout=True, capture_stderr=True)
+        )
+        buffer.write(process[0])  # Write output to buffer
+        buffer.seek(0)  # Reset buffer position
+        return buffer
     except Exception as e:
         st.error(f"Error combining video and audio: {e}")
+        return None
 
 st.title("Combine Multiple Videos and Audio")
 
@@ -30,10 +39,8 @@ if video_files and audio_file:
     with open(audio_path, "wb") as f:
         f.write(audio_file.read())
 
-    output_file = "output_combined.mp4"
-
     if st.button("Combine and Save"):
-        combine_videos_and_audio(video_paths, audio_path, output_file)
-        st.success("Videos and audio combined successfully!")
-        with open(output_file, "rb") as f:
-            st.download_button("Download combined video", f, file_name=output_file, mime="video/mp4")
+        output_buffer = combine_videos_and_audio_stream(video_paths, audio_path)
+        if output_buffer:
+            st.success("Videos and audio combined successfully!")
+            st.download_button("Download combined video", output_buffer, file_name="output_combined.mp4", mime="video/mp4")

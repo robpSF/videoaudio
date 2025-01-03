@@ -1,11 +1,16 @@
 import streamlit as st
-from moviepy.editor import VideoFileClip, AudioFileClip
+import ffmpeg
 
 def combine_video_audio(video_path, audio_path, output_path):
-    video = VideoFileClip(video_path)
-    audio = AudioFileClip(audio_path)
-    video = video.set_audio(audio)
-    video.write_videofile(output_path, codec='libx264', audio_codec='aac')
+    try:
+        (
+            ffmpeg
+            .input(video_path)
+            .output(audio_path, output_path, vcodec='libx264', acodec='aac', strict='experimental')
+            .run(overwrite_output=True)
+        )
+    except ffmpeg.Error as e:
+        st.error(f"Error combining video and audio: {e.stderr.decode()}")
 
 st.title("Combine Video and Audio")
 

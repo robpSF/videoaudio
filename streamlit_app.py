@@ -1,5 +1,5 @@
 import streamlit as st
-import ffmpeg
+from ffmpeg import input as ffmpeg_input, output as ffmpeg_output, concat
 import io
 
 def combine_videos_and_audio_stream(video_paths, audio_path):
